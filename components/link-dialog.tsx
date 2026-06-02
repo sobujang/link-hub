@@ -31,40 +31,53 @@ export function LinkDialog({ open, onClose, onSave, initial, folderId }: Props) 
         <DialogHeader>
           <DialogTitle>{initial?.id ? "링크 편집" : "링크 추가"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="title">제목</Label>
+            <Label htmlFor="title" className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              제목
+            </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예) Notion 워크스페이스"
+              className="h-9 text-[13px]"
               required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="url">URL</Label>
+            <Label htmlFor="url" className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              URL
+            </Label>
             <Input
               id="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://"
+              className="h-9 text-[13px]"
               type="url"
               required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="desc">설명 (선택)</Label>
+            <Label htmlFor="desc" className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              설명 (선택)
+            </Label>
             <Input
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="짧은 설명을 입력하세요"
+              className="h-9 text-[13px]"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onClose}>취소</Button>
-            <Button type="submit">저장</Button>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={onClose} className="text-muted-foreground">
+              취소
+            </Button>
+            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              저장
+            </Button>
           </div>
         </form>
       </DialogContent>

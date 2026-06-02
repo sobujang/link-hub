@@ -29,9 +29,12 @@ export function LinkHub({ initialFolders, initialLinks, isAdmin }: Props) {
   return (
     <div className="space-y-2">
       {tree.length === 0 && !isAdmin && (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-4xl mb-3">🔗</p>
-          <p className="text-sm">아직 등록된 링크가 없습니다.</p>
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary mb-4">
+            <span className="text-3xl">🔗</span>
+          </div>
+          <p className="text-[15px] font-semibold text-foreground mb-1">링크가 없습니다</p>
+          <p className="text-[13px] text-muted-foreground">아직 등록된 링크가 없습니다.</p>
         </div>
       )}
       <LinkTree tree={tree} isAdmin={isAdmin} onRefresh={refresh} />
