@@ -10,9 +10,9 @@ import type { Folder, Link } from "@/lib/db/schema";
 import { toast } from "sonner";
 
 const TYPE_BADGE: Record<string, { label: string; className: string }> = {
-  work: { label: "업무", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  personal: { label: "개인", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
-  shared: { label: "공용", className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+  work: { label: "업무", className: "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-0" },
+  personal: { label: "개인", className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-0" },
+  shared: { label: "공용", className: "bg-secondary text-secondary-foreground border-0" },
 };
 
 interface Props {
@@ -51,9 +51,9 @@ function AddRootFolder({ onRefresh }: { onRefresh: () => void }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-full flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-indigo-400 hover:text-indigo-500 transition-all text-sm"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-primary/30 text-primary/70 hover:border-primary/60 hover:text-primary hover:bg-secondary/50 transition-all text-[13px] font-medium"
       >
-        <FolderPlus size={16} />
+        <FolderPlus size={15} />
         폴더 추가
       </button>
       <FolderDialog open={open} onClose={() => setOpen(false)} onSave={handleSave} />
@@ -124,86 +124,104 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
   }
 
   return (
-    <div className={depth > 0 ? "ml-4 border-l border-border pl-3" : ""}>
-      {/* Folder header */}
-      <div className="group flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-accent transition-colors">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 flex-1 min-w-0"
-        >
-          <ChevronRight
-            size={16}
-            className={`text-muted-foreground flex-shrink-0 transition-transform duration-200 ${expanded ? "rotate-90" : ""} ${!hasContent ? "opacity-0" : ""}`}
+    <div className={depth > 0 ? "ml-4 mt-1.5" : ""}>
+      <div className="bg-card rounded-xl shadow-sm overflow-hidden border border-border/60">
+        {/* Header row with left accent stripe */}
+        <div className="flex">
+          <div
+            className="w-1 flex-shrink-0"
+            style={{ backgroundColor: folder.color ?? "#1967D2" }}
           />
-          <span className="text-lg flex-shrink-0">{folder.icon}</span>
-          <span className="font-semibold text-sm truncate">{folder.name}</span>
-          <Badge className={`text-[10px] px-1.5 py-0 flex-shrink-0 ${badge.className}`} variant="secondary">
-            {badge.label}
-          </Badge>
-        </button>
+          <div
+            className="group flex items-center gap-2 py-2.5 px-3 flex-1 min-w-0 hover:bg-accent/50 transition-colors cursor-pointer select-none"
+            onClick={() => setExpanded(!expanded)}
+          >
+            <ChevronRight
+              size={15}
+              className={`text-muted-foreground flex-shrink-0 transition-transform duration-200
+                ${expanded ? "rotate-90" : ""}
+                ${!hasContent ? "opacity-0 pointer-events-none" : ""}`}
+            />
+            <span className="text-base flex-shrink-0 leading-none">{folder.icon}</span>
+            <span className="font-semibold text-[13px] truncate flex-1 text-foreground">
+              {folder.name}
+            </span>
+            <Badge
+              className={`text-[10px] px-2 py-0 h-[18px] rounded-full font-medium flex-shrink-0 ${badge.className}`}
+              variant="secondary"
+            >
+              {badge.label}
+            </Badge>
 
-        {isAdmin && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              onClick={() => setAddLink(true)}
-              title="링크 추가"
-            >
-              <Link2 size={13} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              onClick={() => setAddSubFolder(true)}
-              title="하위 폴더 추가"
-            >
-              <FolderPlus size={13} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              onClick={() => setEditFolder(true)}
-              title="편집"
-            >
-              <Pencil size={13} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 text-destructive hover:text-destructive"
-              onClick={handleDeleteFolder}
-              title="삭제"
-            >
-              <Trash2 size={13} />
-            </Button>
+            {isAdmin && (
+              <div
+                className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => setAddLink(true)}
+                  title="링크 추가"
+                >
+                  <Link2 size={12} />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => setAddSubFolder(true)}
+                  title="하위 폴더 추가"
+                >
+                  <FolderPlus size={12} />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => setEditFolder(true)}
+                  title="편집"
+                >
+                  <Pencil size={12} />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 text-destructive hover:text-destructive"
+                  onClick={handleDeleteFolder}
+                  title="삭제"
+                >
+                  <Trash2 size={12} />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Expanded content */}
+        {expanded && (
+          <div className="bg-muted/40 border-t border-border/40 animate-in fade-in-0 slide-in-from-top-1 duration-150">
+            {folder.links.map((link) => (
+              <LinkItem key={link.id} link={link} isAdmin={isAdmin} onSave={handleSaveLink} onRefresh={onRefresh} />
+            ))}
+            {folder.children.map((child) => (
+              <div key={child.id} className="px-3 py-1.5">
+                <FolderNode folder={child} depth={depth + 1} isAdmin={isAdmin} onRefresh={onRefresh} />
+              </div>
+            ))}
+            {isAdmin && (
+              <button
+                onClick={() => setAddLink(true)}
+                className="w-full flex items-center gap-2 px-10 py-2.5 text-[12px] text-muted-foreground hover:text-primary hover:bg-accent/50 transition-colors"
+              >
+                <Plus size={11} />
+                링크 추가
+              </button>
+            )}
           </div>
         )}
       </div>
-
-      {/* Expanded content */}
-      {expanded && (
-        <div className="mt-1 space-y-1">
-          {folder.links.map((link) => (
-            <LinkItem key={link.id} link={link} isAdmin={isAdmin} onSave={handleSaveLink} onRefresh={onRefresh} />
-          ))}
-          {folder.children.map((child) => (
-            <FolderNode key={child.id} folder={child} depth={depth + 1} isAdmin={isAdmin} onRefresh={onRefresh} />
-          ))}
-          {isAdmin && (
-            <button
-              onClick={() => setAddLink(true)}
-              className="w-full flex items-center gap-2 px-8 py-2 text-xs text-muted-foreground hover:text-indigo-500 transition-colors"
-            >
-              <Plus size={12} />
-              링크 추가
-            </button>
-          )}
-        </div>
-      )}
 
       <FolderDialog
         open={editFolder}
@@ -250,29 +268,51 @@ function LinkItem({ link, isAdmin, onSave, onRefresh }: {
 
   return (
     <>
-      <div className="group flex items-center gap-3 px-8 py-2 rounded-xl hover:bg-accent transition-colors">
-        <img src={favicon} alt="" className="w-4 h-4 flex-shrink-0 rounded-sm" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+      <div className="group flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60 transition-colors border-b border-border/30 last:border-b-0">
+        <img
+          src={favicon}
+          alt=""
+          className="w-4 h-4 flex-shrink-0 rounded-sm opacity-80"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
         <a
           href={link.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 group/link"
         >
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium truncate">{link.title}</span>
-            <ExternalLink size={11} className="text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100" />
+            <span className="text-[13px] font-medium text-foreground truncate group-hover/link:text-primary transition-colors">
+              {link.title}
+            </span>
+            <ExternalLink
+              size={10}
+              className="text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
           </div>
           {link.description && (
-            <p className="text-xs text-muted-foreground truncate">{link.description}</p>
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5 leading-relaxed">
+              {link.description}
+            </p>
           )}
         </a>
         {isAdmin && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditing(true)}>
-              <Pencil size={12} />
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil size={11} />
             </Button>
-            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={handleDelete}>
-              <Trash2 size={12} />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-destructive hover:text-destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 size={11} />
             </Button>
           </div>
         )}

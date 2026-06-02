@@ -17,10 +17,10 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Header session={session} />
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">팀 링크 허브</h1>
-          <p className="text-sm text-muted-foreground mt-1">자주 사용하는 링크를 한 곳에서 관리하세요</p>
+          <h1 className="text-xl font-semibold text-foreground">팀 링크 허브</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">자주 사용하는 링크를 한 곳에서 관리하세요</p>
         </div>
         <LinkHub
           initialFolders={allFolders}
