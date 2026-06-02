@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,14 @@ export function LinkDialog({ open, onClose, onSave, initial, folderId }: Props) 
   const [title, setTitle] = useState(initial?.title ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+
+  useEffect(() => {
+    if (open) {
+      setTitle(initial?.title ?? "");
+      setUrl(initial?.url ?? "");
+      setDescription(initial?.description ?? "");
+    }
+  }, [open]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,7 +75,7 @@ export function LinkDialog({ open, onClose, onSave, initial, folderId }: Props) 
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="짧은 설명을 입력하세요"
+              placeholder="#키워드 형식으로 입력하세요"
               className="h-9 text-[13px]"
             />
           </div>
