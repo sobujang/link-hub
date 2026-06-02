@@ -246,7 +246,7 @@ function FolderNode({ folder, depth, isAdmin, onRefresh, isDragging, isDragTarge
                 ${!hasContent ? "opacity-0 pointer-events-none" : ""}`}
             />
             <span className="text-base flex-shrink-0 leading-none">{folder.icon}</span>
-            <span className="font-semibold text-[13px] truncate flex-1 text-foreground">
+            <span className="font-semibold text-[14px] truncate flex-1 text-foreground">
               {folder.name}
             </span>
             <Badge
@@ -355,6 +355,23 @@ interface LinkItemProps {
   onDragEnd?: () => void;
 }
 
+function DescriptionTags({ text }: { text: string }) {
+  const parts = text.split(/(#\S+)/g);
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {parts.map((part, i) =>
+        part.startsWith("#") ? (
+          <span key={i} className="bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 rounded-md font-medium">
+            {part}
+          </span>
+        ) : part.trim() ? (
+          <span key={i} className="text-[11px] text-muted-foreground">{part.trim()}</span>
+        ) : null
+      )}
+    </div>
+  );
+}
+
 function LinkItem({ link, isAdmin, onSave, onRefresh, isDragging, isDragTarget, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }: LinkItemProps) {
   const [editing, setEditing] = useState(false);
 
@@ -405,16 +422,12 @@ function LinkItem({ link, isAdmin, onSave, onRefresh, isDragging, isDragTarget, 
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-medium text-foreground truncate group-hover/link:text-primary transition-colors">
+            <span className="text-[14px] font-medium text-foreground truncate group-hover/link:text-primary transition-colors">
               {link.title}
             </span>
             <ExternalLink size={10} className="text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-          {link.description && (
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5 leading-relaxed">
-              {link.description}
-            </p>
-          )}
+          {link.description && <DescriptionTags text={link.description} />}
         </a>
         {isAdmin && (
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
