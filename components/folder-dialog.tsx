@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,15 @@ export function FolderDialog({ open, onClose, onSave, initial, parentId }: Props
   const [type, setType] = useState<"personal" | "work" | "shared">(
     (initial?.type as "personal" | "work" | "shared") ?? "shared"
   );
+
+  useEffect(() => {
+    if (open) {
+      setName(initial?.name ?? "");
+      setIcon(initial?.icon ?? "📁");
+      setColor(initial?.color ?? "#1967D2");
+      setType((initial?.type as "personal" | "work" | "shared") ?? "shared");
+    }
+  }, [open]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

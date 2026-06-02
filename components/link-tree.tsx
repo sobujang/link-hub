@@ -193,6 +193,7 @@ function FolderNode({ folder, depth, isAdmin, onRefresh, isDragging, isDragTarge
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      toast.success("링크가 수정되었습니다");
     } else {
       await fetch("/api/links", {
         method: "POST",
