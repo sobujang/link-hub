@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ChevronRight, Plus, Pencil, Trash2, ExternalLink, FolderPlus, Link2 } from "lucide-react";
+import { ChevronRight, Plus, Pencil, Trash2, ExternalLink, FolderPlus, Link2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LinkDialog } from "./link-dialog";
@@ -22,14 +22,63 @@ interface Props {
 }
 
 export function LinkTree({ tree, isAdmin, onRefresh }: Props) {
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+
+  async function reorderFolders(fromId: string, toId: string) {
+    const ids = tree.map(f => f.id);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(toId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const newIds = [...ids];
+    newIds.splice(fromIdx, 1);
+    newIds.splice(toIdx, 0, fromId);
+    await Promise.all(
+      newIds.map((id, idx) =>
+        fetch("/api/folders", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, order: (idx + 1) * 10 }),
+        })
+      )
+    );
+    onRefresh();
+  }
+
   return (
     <div className="space-y-2">
-      {tree.map((folder) => (
-        <FolderNode key={folder.id} folder={folder} depth={0} isAdmin={isAdmin} onRefresh={onRefresh} />
+      {tree.map(folder => (
+        <FolderNode
+          key={folder.id}
+          folder={folder}
+          depth={0}
+          isAdmin={isAdmin}
+          onRefresh={onRefresh}
+          isDragging={draggingFolderId === folder.id}
+          isDragTarget={dragOverFolderId === folder.id && draggingFolderId !== folder.id}
+          onDragStart={isAdmin ? () => setDraggingFolderId(folder.id) : undefined}
+          onDragOver={isAdmin ? (e) => {
+            e.preventDefault();
+            if (draggingFolderId !== folder.id) setDragOverFolderId(folder.id);
+          } : undefined}
+          onDragLeave={isAdmin ? (e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverFolderId(null);
+          } : undefined}
+          onDrop={isAdmin ? (e) => {
+            e.preventDefault();
+            if (draggingFolderId && draggingFolderId !== folder.id) {
+              reorderFolders(draggingFolderId, folder.id);
+            }
+            setDraggingFolderId(null);
+            setDragOverFolderId(null);
+          } : undefined}
+          onDragEnd={isAdmin ? () => {
+            setDraggingFolderId(null);
+            setDragOverFolderId(null);
+          } : undefined}
+        />
       ))}
-      {isAdmin && (
-        <AddRootFolder onRefresh={onRefresh} />
-      )}
+      {isAdmin && <AddRootFolder onRefresh={onRefresh} />}
     </div>
   );
 }
@@ -61,19 +110,51 @@ function AddRootFolder({ onRefresh }: { onRefresh: () => void }) {
   );
 }
 
-function FolderNode({ folder, depth, isAdmin, onRefresh }: {
+interface FolderNodeProps {
   folder: FolderWithChildren;
   depth: number;
   isAdmin: boolean;
   onRefresh: () => void;
-}) {
+  isDragging?: boolean;
+  isDragTarget?: boolean;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: () => void;
+}
+
+function FolderNode({ folder, depth, isAdmin, onRefresh, isDragging, isDragTarget, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }: FolderNodeProps) {
   const [expanded, setExpanded] = useState(folder.isExpanded);
   const [editFolder, setEditFolder] = useState(false);
   const [addSubFolder, setAddSubFolder] = useState(false);
   const [addLink, setAddLink] = useState(false);
 
+  const [draggingLinkId, setDraggingLinkId] = useState<string | null>(null);
+  const [dragOverLinkId, setDragOverLinkId] = useState<string | null>(null);
+
   const badge = TYPE_BADGE[folder.type] ?? TYPE_BADGE.shared;
   const hasContent = folder.children.length > 0 || folder.links.length > 0;
+
+  async function reorderLinks(fromId: string, toId: string) {
+    const ids = folder.links.map(l => l.id);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(toId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const newIds = [...ids];
+    newIds.splice(fromIdx, 1);
+    newIds.splice(toIdx, 0, fromId);
+    await Promise.all(
+      newIds.map((id, idx) =>
+        fetch("/api/links", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, order: (idx + 1) * 10 }),
+        })
+      )
+    );
+    onRefresh();
+  }
 
   async function handleDeleteFolder() {
     if (!confirm(`"${folder.name}" 폴더를 삭제할까요? 안의 링크도 모두 삭제됩니다.`)) return;
@@ -125,7 +206,25 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
 
   return (
     <div className={depth > 0 ? "ml-4 mt-1.5" : ""}>
-      <div className="bg-card rounded-xl shadow-sm overflow-hidden border border-border/60">
+      <div
+        draggable={!!onDragStart}
+        onDragStart={(e) => {
+          e.stopPropagation();
+          onDragStart?.();
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        onDragOver={(e) => { e.stopPropagation(); onDragOver?.(e); }}
+        onDragLeave={(e) => { e.stopPropagation(); onDragLeave?.(e); }}
+        onDrop={(e) => { e.stopPropagation(); onDrop?.(e); }}
+        onDragEnd={(e) => { e.stopPropagation(); onDragEnd?.(); }}
+        className={`bg-card rounded-xl shadow-sm overflow-hidden border transition-all duration-150 ${
+          isDragging
+            ? "opacity-40 border-border/60"
+            : isDragTarget
+            ? "border-primary ring-2 ring-primary/20 shadow-md border-border/60"
+            : "border-border/60"
+        }`}
+      >
         {/* Header row with left accent stripe */}
         <div className="flex">
           <div
@@ -133,9 +232,13 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
             style={{ backgroundColor: folder.color ?? "#1967D2" }}
           />
           <div
-            className="group flex items-center gap-2 py-2.5 px-3 flex-1 min-w-0 hover:bg-accent/50 transition-colors cursor-pointer select-none"
+            className="group flex items-center gap-2 py-2.5 px-3 flex-1 min-w-0 hover:bg-accent/50 transition-colors select-none"
             onClick={() => setExpanded(!expanded)}
+            style={{ cursor: onDragStart ? "grab" : "pointer" }}
           >
+            {isAdmin && depth === 0 && (
+              <GripVertical size={13} className="text-muted-foreground/30 group-hover:text-muted-foreground/60 flex-shrink-0 transition-colors -ml-1" />
+            )}
             <ChevronRight
               size={15}
               className={`text-muted-foreground flex-shrink-0 transition-transform duration-200
@@ -158,40 +261,16 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
                 className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={() => setAddLink(true)}
-                  title="링크 추가"
-                >
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => setAddLink(true)} title="링크 추가">
                   <Link2 size={12} />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={() => setAddSubFolder(true)}
-                  title="하위 폴더 추가"
-                >
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => setAddSubFolder(true)} title="하위 폴더 추가">
                   <FolderPlus size={12} />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={() => setEditFolder(true)}
-                  title="편집"
-                >
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => setEditFolder(true)} title="편집">
                   <Pencil size={12} />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-destructive hover:text-destructive"
-                  onClick={handleDeleteFolder}
-                  title="삭제"
-                >
+                <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={handleDeleteFolder} title="삭제">
                   <Trash2 size={12} />
                 </Button>
               </div>
@@ -203,7 +282,39 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
         {expanded && (
           <div className="bg-muted/40 border-t border-border/40 animate-in fade-in-0 slide-in-from-top-1 duration-150">
             {folder.links.map((link) => (
-              <LinkItem key={link.id} link={link} isAdmin={isAdmin} onSave={handleSaveLink} onRefresh={onRefresh} />
+              <LinkItem
+                key={link.id}
+                link={link}
+                isAdmin={isAdmin}
+                onSave={handleSaveLink}
+                onRefresh={onRefresh}
+                isDragging={draggingLinkId === link.id}
+                isDragTarget={dragOverLinkId === link.id && draggingLinkId !== link.id}
+                onDragStart={isAdmin ? (e) => {
+                  e.stopPropagation();
+                  setDraggingLinkId(link.id);
+                  e.dataTransfer.effectAllowed = "move";
+                } : undefined}
+                onDragOver={isAdmin ? (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (draggingLinkId !== link.id) setDragOverLinkId(link.id);
+                } : undefined}
+                onDragLeave={isAdmin ? () => setDragOverLinkId(null) : undefined}
+                onDrop={isAdmin ? (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (draggingLinkId && draggingLinkId !== link.id) {
+                    reorderLinks(draggingLinkId, link.id);
+                  }
+                  setDraggingLinkId(null);
+                  setDragOverLinkId(null);
+                } : undefined}
+                onDragEnd={isAdmin ? () => {
+                  setDraggingLinkId(null);
+                  setDragOverLinkId(null);
+                } : undefined}
+              />
             ))}
             {folder.children.map((child) => (
               <div key={child.id} className="px-3 py-1.5">
@@ -223,34 +334,28 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
         )}
       </div>
 
-      <FolderDialog
-        open={editFolder}
-        onClose={() => setEditFolder(false)}
-        onSave={handleSaveFolder}
-        initial={folder}
-      />
-      <FolderDialog
-        open={addSubFolder}
-        onClose={() => setAddSubFolder(false)}
-        onSave={handleSaveFolder}
-        parentId={folder.id}
-      />
-      <LinkDialog
-        open={addLink}
-        onClose={() => setAddLink(false)}
-        onSave={handleSaveLink}
-        folderId={folder.id}
-      />
+      <FolderDialog open={editFolder} onClose={() => setEditFolder(false)} onSave={handleSaveFolder} initial={folder} />
+      <FolderDialog open={addSubFolder} onClose={() => setAddSubFolder(false)} onSave={handleSaveFolder} parentId={folder.id} />
+      <LinkDialog open={addLink} onClose={() => setAddLink(false)} onSave={handleSaveLink} folderId={folder.id} />
     </div>
   );
 }
 
-function LinkItem({ link, isAdmin, onSave, onRefresh }: {
+interface LinkItemProps {
   link: Link;
   isAdmin: boolean;
   onSave: (data: Partial<Link>) => void;
   onRefresh: () => void;
-}) {
+  isDragging?: boolean;
+  isDragTarget?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave?: () => void;
+  onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: () => void;
+}
+
+function LinkItem({ link, isAdmin, onSave, onRefresh, isDragging, isDragTarget, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }: LinkItemProps) {
   const [editing, setEditing] = useState(false);
 
   const favicon = `https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=32`;
@@ -268,7 +373,24 @@ function LinkItem({ link, isAdmin, onSave, onRefresh }: {
 
   return (
     <>
-      <div className="group flex items-center gap-3 px-4 py-2.5 hover:bg-accent/60 transition-colors border-b border-border/30 last:border-b-0">
+      <div
+        draggable={!!onDragStart}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+        className={`group flex items-center gap-3 px-4 py-2.5 transition-colors border-b border-border/30 last:border-b-0 ${
+          isDragging
+            ? "opacity-40"
+            : isDragTarget
+            ? "border-t-2 border-t-primary bg-secondary/30"
+            : "hover:bg-accent/60"
+        }`}
+      >
+        {isAdmin && onDragStart && (
+          <GripVertical size={12} className="text-muted-foreground/30 group-hover:text-muted-foreground/60 flex-shrink-0 cursor-grab transition-colors -ml-1" />
+        )}
         <img
           src={favicon}
           alt=""
@@ -280,15 +402,13 @@ function LinkItem({ link, isAdmin, onSave, onRefresh }: {
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 min-w-0 group/link"
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center gap-1.5">
             <span className="text-[13px] font-medium text-foreground truncate group-hover/link:text-primary transition-colors">
               {link.title}
             </span>
-            <ExternalLink
-              size={10}
-              className="text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            />
+            <ExternalLink size={10} className="text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           {link.description && (
             <p className="text-[11px] text-muted-foreground truncate mt-0.5 leading-relaxed">
@@ -298,31 +418,16 @@ function LinkItem({ link, isAdmin, onSave, onRefresh }: {
         </a>
         {isAdmin && (
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-              onClick={() => setEditing(true)}
-            >
+            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => setEditing(true)}>
               <Pencil size={11} />
             </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 text-destructive hover:text-destructive"
-              onClick={handleDelete}
-            >
+            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={handleDelete}>
               <Trash2 size={11} />
             </Button>
           </div>
         )}
       </div>
-      <LinkDialog
-        open={editing}
-        onClose={() => setEditing(false)}
-        onSave={onSave}
-        initial={link}
-      />
+      <LinkDialog open={editing} onClose={() => setEditing(false)} onSave={onSave} initial={link} />
     </>
   );
 }
