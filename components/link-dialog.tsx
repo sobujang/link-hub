@@ -21,7 +21,7 @@ export function LinkDialog({ open, onClose, onSave, initial, folderId }: Props) 
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave({ ...initial, title, url, description, folderId });
+    onSave({ ...initial, title, url, description, folderId: folderId ?? initial?.folderId });
     onClose();
   }
 

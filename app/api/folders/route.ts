@@ -11,7 +11,9 @@ function isAdmin(session: Session | null) {
 
 export async function GET() {
   const all = await db.select().from(folders).orderBy(folders.order);
-  return NextResponse.json(all);
+  return NextResponse.json(all, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 export async function POST(req: Request) {

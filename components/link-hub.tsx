@@ -16,8 +16,8 @@ export function LinkHub({ initialFolders, initialLinks, isAdmin }: Props) {
 
   const refresh = useCallback(async () => {
     const [fRes, lRes] = await Promise.all([
-      fetch("/api/folders"),
-      fetch("/api/links"),
+      fetch("/api/folders", { cache: "no-store" }),
+      fetch("/api/links", { cache: "no-store" }),
     ]);
     const [newFolders, newLinks] = await Promise.all([fRes.json(), lRes.json()]);
     setFolders(newFolders);

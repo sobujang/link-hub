@@ -217,12 +217,14 @@ function FolderNode({ folder, depth, isAdmin, onRefresh }: {
         onSave={handleSaveFolder}
         parentId={folder.id}
       />
-      <LinkDialog
-        open={addLink}
-        onClose={() => setAddLink(false)}
-        onSave={handleSaveLink}
-        folderId={folder.id}
-      />
+      {addLink && (
+        <LinkDialog
+          open={addLink}
+          onClose={() => setAddLink(false)}
+          onSave={handleSaveLink}
+          folderId={folder.id}
+        />
+      )}
     </div>
   );
 }
@@ -277,12 +279,14 @@ function LinkItem({ link, isAdmin, onSave, onRefresh }: {
           </div>
         )}
       </div>
-      <LinkDialog
-        open={editing}
-        onClose={() => setEditing(false)}
-        onSave={onSave}
-        initial={link}
-      />
+      {editing && (
+        <LinkDialog
+          open={editing}
+          onClose={() => setEditing(false)}
+          onSave={onSave}
+          initial={link}
+        />
+      )}
     </>
   );
 }
